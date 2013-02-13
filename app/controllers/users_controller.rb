@@ -10,6 +10,7 @@ class UsersController < ApplicationController
   
   def show
     @user = User.find(params[:id])
+    @microposts = @user.microposts.paginate(page: params[:page])
   end
   
   def new
@@ -20,7 +21,7 @@ class UsersController < ApplicationController
     @user = User.new(params[:user])    
     if @user.save
       sign_in @user
-      flash[:success] = "Welcome to the Sample App!"
+      flash[:success] = "Welcome to TwitterLite, #{@user.name}!"
       redirect_to @user
     else
       render 'new'
@@ -28,8 +29,13 @@ class UsersController < ApplicationController
   end
   
   def destroy
-    User.find(params[:id]).destroy
-    flash[:success] = "User Destroyed!"
+    user = User.find(params[:id])
+    if (current_user? user) && (current_user.admin?)
+      flash[:error] = "You are not allowed to delete yourself as an admin."
+    else
+      user.destroy
+      flash[:success] = "User: #{user.name} destroyed!"
+    end
     redirect_to users_url
   end
   
@@ -49,13 +55,6 @@ class UsersController < ApplicationController
   end
   
   private    
-    def signed_in_user
-      unless signed_in?
-        store_location
-        redirect_to signin_url, notice: "Please sign in."
-      end      
-    end
-    
     def correct_user
       @user = User.find(params[:id])
       redirect_to(root_path) unless current_user?(@user)
@@ -69,5 +68,5 @@ class UsersController < ApplicationController
       if signed_in?
           redirect_to root_path, notice: "Already logged in"
       end
-end
+    end
 end

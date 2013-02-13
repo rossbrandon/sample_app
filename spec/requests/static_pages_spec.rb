@@ -11,11 +11,27 @@ describe "Static pages" do
 
   describe "Home page" do
     before { visit root_path }
-    let(:heading) { 'Sample App' }
+    let(:heading) { 'TwitterLite' }
     let(:page_title) { '' }
     
     it_should_behave_like "all static pages"
     it { should_not have_selector 'title', text: '| Home' }
+    
+    describe "for signed-in users" do
+      let(:user) { FactoryGirl.create(:user) }
+      before do
+        FactoryGirl.create(:micropost, user: user, content: "Lorem ipsum")
+        FactoryGirl.create(:micropost, user: user, content: "Dolor sit amet")
+        sign_in user
+        visit root_path
+      end
+      
+      it "should render the user's feed" do
+        user.feed.each do |item|
+          page.should have_selector("li##{item.id}", text: item.content)
+        end
+      end
+    end
   end
 
   describe "Help page" do
@@ -53,7 +69,7 @@ describe "Static pages" do
     click_link "Home"
     click_link "Sign up now!"
     page.should have_selector 'title', text: full_title('Sign Up')
-    click_link "sample app"
+    click_link "TwitterLite"
     page.should have_selector 'title', text: full_title('')
   end
 end
